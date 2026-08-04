@@ -412,7 +412,7 @@ const UPSCPost: React.FC = () => {
             </h1>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: 13, color: '#475569', marginBottom: 28, alignItems: 'center' }}>
               <span style={{ color: '#94a3b8', fontWeight: 600 }}>Tobi</span>
-              <span>·</span><span>June 14, 2026</span>
+              <span>·</span><span>June 17, 2026</span>
               <span>·</span><span>12 min read</span>
               <span>·</span>
               <span style={{ color: '#22c55e', fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>🛡 CERT-In: CERTIn-20460826</span>
@@ -634,7 +634,7 @@ const UPSCPost: React.FC = () => {
                 { dot: '#3b82f6', label: 'June 3, 2026 — 11:36 AM', text: 'Full technical report sent to CERT-In (incident@cert-in.org.in) and UPSC (upscsoap@nic.in) with CVSS scores and PoC documentation.' },
                 { dot: '#f59e0b', label: 'June 3, 2026 — 9:07 PM', text: 'CERT-In acknowledged the report within 9 hours. Reference: CERTIn-20460826. Forwarded to concerned authority.' },
                 { dot: '#ef4444', label: 'June 2026', text: 'All vulnerable API endpoints patched. Endpoints now return 404/503. Secrets rotated.' },
-                { dot: '#22c55e', label: 'June 14, 2026', text: 'Public disclosure — this post published after confirming all patches are live.' },
+                { dot: '#22c55e', label: 'June 17, 2026', text: 'Public disclosure — this post published after confirming all patches are live.' },
               ].map((e, i) => (
                 <div key={i} style={{ position: 'relative', marginBottom: 28 }}>
                   <div style={{ position: 'absolute', left: -29, top: 4, width: 14, height: 14, borderRadius: '50%', background: e.dot, border: '2px solid #0a0a0f', boxShadow: `0 0 0 2px ${e.dot}44` }} />
