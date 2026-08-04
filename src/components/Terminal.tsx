@@ -18,10 +18,9 @@ interface CommandOutput {
   type: 'input' | 'output' | 'error' | 'success' | 'system' | 'accent' | 'warn';
 }
 
-// Merge legacy blog data + new blog posts into a unified terminal list
-function buildTerminalBlogs(legacy: LegacyBlogPost[]) {
-  // New-style posts (from blogPosts.ts) mapped to terminal format
-  const newStyle = blogPosts.map(p => ({
+// Use ONLY the canonical blogPosts list — no legacy merging
+function buildTerminalBlogs() {
+  return blogPosts.map(p => ({
     id: p.slug,
     title: p.title,
     date: p.date,
@@ -34,11 +33,6 @@ function buildTerminalBlogs(legacy: LegacyBlogPost[]) {
     content: '',
     cve: undefined as string | undefined,
   }));
-
-  // Merge: use new-style as primary, add legacy ones not already covered
-  const newSlugs = new Set(blogPosts.map(p => p.slug));
-  const filteredLegacy = legacy.filter(b => !newSlugs.has(b.id));
-  return [...newStyle, ...filteredLegacy];
 }
 
 const BOOT_MSGS: CommandOutput[] = [
@@ -81,10 +75,10 @@ function parseUA(ua: string): { os: string; browser: string; device: string } {
 }
 
 export const Terminal: React.FC<TerminalProps> = ({
-  isOpen, onClose, blogs, isDarkMode, setIsDarkMode,
+  isOpen, onClose, isDarkMode, setIsDarkMode,
 }) => {
   const navigate = useNavigate();
-  const allBlogs = buildTerminalBlogs(blogs);
+  const allBlogs = buildTerminalBlogs();
   const [history, setHistory] = useState<CommandOutput[]>(BOOT_MSGS);
   const [inputValue, setInputValue] = useState('');
   const [cmdHistory, setCmdHistory] = useState<string[]>([]);
