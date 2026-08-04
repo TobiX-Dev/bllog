@@ -114,7 +114,7 @@ const criticalFindings: Finding[] = [
     id: 'V-01', cvss: '9.8', severity: 'CRITICAL',
     title: 'Hardcoded AES-128 Encryption Key & IV in Client-Side JavaScript',
     description: 'Every API request body and response is encrypted using AES-128-CBC. The encryption key and IV are identical ("12345678*********") and hardcoded in the public JavaScript bundle visible to any browser visitor visiting mpsconline.gov.in.',
-    code: `// Extracted from main.a0334bf6.chunk.js (Chrome DevTools → Sources)
+    code: `// Extracted from Configuration.chunk.js (Chrome DevTools → Sources)
 // Line ~3,698,589
 
 i = "7lB9sd8yddCcBpe38895Zbpv8*****************************************5H3FzTpnr19sC8Ip8tg=="
@@ -225,10 +225,10 @@ const mediumFindings: Finding[] = [
     id: 'V-07', cvss: '5.3', severity: 'MEDIUM',
     title: 'Leaked Internal Staging Infrastructure & Application Version',
     description: 'Multiple non-production server URLs and a staging payment gateway URL are hardcoded in the production JavaScript bundle. The application version is also exposed via an unauthenticated endpoint.',
-    code: `// From main.a0334bf6.chunk.js and main.407aef01.chunk.js
+    code: `// From Configuration.chunk.js and main.****ef01.chunk.js
 const OAS_API_BASE_URL = [
-  { key: "oasdev.devmpsconline.in",  baseUrl: "https://oasdev.devmpsconline.in" },  // Dev
-  { key: "oasqa.devmpsconline.in",   baseUrl: "https://oasqa.devmpsconline.in" },   // QA
+  { key: "oa**ev.*********.in",  baseUrl: "https://o**ev.*********e.in" },  // Dev
+  { key: "oa**a.d********.in",   baseUrl: "https://oa*qa.**********ne.in" },   // QA
   // testapi.mpsconline.gov.in — test API server (discoverable)
 ];
 
@@ -248,7 +248,7 @@ from Crypto.Util.Padding import pad, unpad
 import base64, binascii, json, requests
 import urllib3; urllib3.disable_warnings()
 
-# ── Hardcoded secrets extracted from main.a0334bf6.chunk.js ──────────────────
+# ── Hardcoded secrets extracted from Configuration.chunk.js ──────────────────
 KEY = b"12345678*********"   # AES-128-CBC Key (variable o in bundle)
 IV  = b"12345678*********"   # IV (same as key)
 AT  = "7lB9sd8yddCcBpe38895Zbpv8*****************************************5H3FzTpnr19sC8Ip8tg=="
@@ -426,7 +426,7 @@ const MPSCPost: React.FC = () => {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, fontSize: 13, color: '#64748b', fontFamily: mono }}>
               <span>Tobi</span>
               <span>·</span>
-              <span>July 28, 2026</span>
+              <span>July 17, 2026</span>
               <span>·</span>
               <span>14 min read</span>
               <span>·</span>
@@ -510,7 +510,7 @@ const MPSCPost: React.FC = () => {
             <p style={{ fontSize: 14, color: '#94a3b8', lineHeight: 1.8, marginBottom: 16 }}>
               The critical discovery happened when I noticed two variable assignments deep in <code style={{ fontFamily: mono, color: '#94a3b8' }}>main.a0334bf6.chunk.js</code>:
             </p>
-            <TerminalFrame title="Chrome DevTools → Sources → main.a0334bf6.chunk.js (Line ~3,698,589)">
+            <TerminalFrame title="Chrome DevTools → Sources → Configuration.chunk.js (Line ~3,698,589)">
               <CodeBlock lang="javascript" code={`i = "7lB9sd8yddCcBpe38895Zbpv8*****************************************5H3FzTpnr19sC8Ip8tg=="
 o = "12345678*********"
 
@@ -537,7 +537,7 @@ o = "12345678*********"
             <div style={{ background: '#111118', border: '1px solid #1e1e2e', borderRadius: 8, padding: 20, marginTop: 20 }}>
               <div style={{ fontFamily: mono, fontSize: 12, color: '#f59e0b', fontWeight: 700, marginBottom: 12, letterSpacing: '0.06em' }}>TOOLS USED</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-                {['Browser DevTools', 'Python (Requests + PyCryptodome)', 'curl', 'JS Formatter / Beautifier'].map(t => (
+                {['Burp [Proxys]', 'Python (Requests + PyCryptodome)', 'curl', 'JS Formatter / Beautifier'].map(t => (
                   <span key={t} style={{ background: '#0d1117', border: '1px solid #30363d', borderRadius: 6, padding: '6px 12px', fontSize: 13, color: '#94a3b8', fontFamily: mono }}>{t}</span>
                 ))}
               </div>
@@ -688,11 +688,11 @@ No Rate Limit  →   Dept Enum    →    CRC Bypass    →    AES Decrypt
               <div style={{ position: 'absolute', left: 8, top: 0, bottom: 0, width: 1, background: 'linear-gradient(to bottom,#ef4444,#1e1e2e)' }} />
               {[
                 { date: 'May–June 2026', event: 'Vulnerabilities discovered during personal security research', color: '#64748b' },
-                { date: 'June 14, 2026 — 11:36 AM', event: 'Full technical report sent to CERT-In (incident@cert-in.org.in)', color: '#3b82f6' },
+                { date: 'June 14, 2026 — 2:03 PM', event: 'Full technical report sent to CERT-In (incident@cert-in.org.in)', color: '#3b82f6' },
                 { date: 'June 14, 2026 — 5:10 PM', event: 'CERT-In acknowledged within same day. Ref: CERTIn-51337226', color: '#f59e0b' },
-                { date: 'June 30, 2026', event: 'CERT-In confirmed: "concerned organization has confirmed that the reported vulnerability is fixed"', color: '#22c55e' },
-                { date: 'July 14, 2026', event: 'Official CERT-In Acknowledgement Letter received (PGP signed)', color: '#a855f7' },
-                { date: 'July 28, 2026', event: 'Public disclosure — this post published after confirming all patches live', color: '#ef4444' },
+                { date: 'June 30, 2026 — 5:36 PM' , event: 'CERT-In confirmed: "concerned organization has confirmed that the reported vulnerability is fixed"', color: '#22c55e' },
+                { date: 'July 14, 2026 — 2:14 PM' , event: 'Official CERT-In Acknowledgement Letter received (PGP signed)', color: '#a855f7' },
+                { date: 'July 17, 2026', event: 'Public disclosure — this post published after confirming all patches live', color: '#ef4444' },
               ].map(item => (
                 <div key={item.date} style={{ position: 'relative', marginBottom: 24, paddingLeft: 16 }}>
                   <div style={{ position: 'absolute', left: -28, top: 6, width: 10, height: 10, borderRadius: '50%', background: item.color, boxShadow: `0 0 8px ${item.color}` }} />
