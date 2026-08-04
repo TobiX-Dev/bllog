@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UPSC NRA Candidate Portal — Multiple Critical & High-Severity Vulnerabilities</title>
+  <meta name="description" content="A detailed responsible disclosure report outlining 15+ vulnerabilities in the UPSC NRA portal, including RSA key exposure, IDOR, and DigiLocker credentials.">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+          },
+          colors: {
+            brand: {
+              bgDark: '#0f1117',
+              bgLight: '#ffffff',
+              primary: '#111827',
+              secondary: '#6b7280',
+              critical: '#dc2626',
+              high: '#d97706',
+              medium: '#2563eb',
+              success: '#16a34a',
+              codeBg: '#1e1e2e',
+              codeText: '#cdd6f4',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom styling for smooth transitions and hover icons */
+    .anchor-link {
+      opacity: 0;
+      transition: opacity 0.2s ease-in-out;
+    }
+    h2:hover .anchor-link, h3:hover .anchor-link {
+      opacity: 1;
+    }
+    
+    /* Codeblock scrollbar customization */
+    pre::-webkit-scrollbar {
+      height: 6px;
+    }
+    pre::-webkit-scrollbar-track {
+      background: #1e1e2e;
+    }
+    pre::-webkit-scrollbar-thumb {
+      background: #44475a;
+      border-radius: 3px;
+    }
+
+    /* Active Table of Contents highlighting */
+    .toc-active {
+      color: #dc2626 !important;
+      border-left-color: #dc2626 !important;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 text-brand-primary font-sans antialiased selection:bg-red-500 selection:text-white">
+
+  <!-- Reading Progress Bar -->
+  <div id="progress-bar" class="fixed top-0 left-0 h-1 bg-brand-critical z-50 transition-all duration-75" style="width: 0%;"></div>
+
+  <!-- Hero Header / Dark Section -->
+  <header class="bg-brand-bgDark text-white py-12 md:py-16 px-4 border-b border-gray-800 relative">
+    <div class="max-w-5xl mx-auto">
+      
+      <!-- Back to blog link -->
+      <a href="https://iamtobi.in/blog" class="inline-flex items-center text-sm text-gray-400 hover:text-white transition-colors duration-200 mb-8 group">
+        <svg class="w-4 h-4 mr-2 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+        </svg>
+        Back to blog
+      </a>
+
+      <!-- Badges Row -->
+      <div class="flex flex-wrap gap-2.5 mb-6">
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-950 text-red-400 border border-red-800">
+          <span class="w-2 h-2 rounded-full bg-red-500 mr-2 animate-pulse"></span>
+          CRITICAL SEVERITY
+        </span>
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-950 text-amber-400 border border-amber-800">
+          RESPONSIBLE DISCLOSURE
+        </span>
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-blue-950 text-blue-400 border border-blue-800">
+          CERT-In ACKNOWLEDGED
+        </span>
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-950 text-green-400 border border-green-800">
+          FIXED & PATCHED
+        </span>
+      </div>
+
+      <!-- Main Title -->
+      <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight mb-6 leading-tight">
+        UPSC NRA Candidate Portal — Multiple Critical & High-Severity Vulnerabilities
+      </h1>
+
+      <p class="text-lg md:text-xl text-gray-400 font-medium mb-8 max-w-3xl">
+        A detailed technical writeup detailing 15+ vulnerabilities in the National Recruitment Agency portal resulting in systemic bypasses.
+      </p>
+
+      <!-- Divider -->
+      <div class="h-px bg-gray-800 my-6"></div>
+
+      <!-- Meta Row -->
+      <div class="flex flex-wrap items-center justify-between gap-4 text-sm text-gray-400">
+        <div class="flex flex-wrap items-center gap-x-6 gap-y-2">
+          <span class="flex items-center gap-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+            Author: <a href="https://iamtobi.in" class="underline hover:text-white ml-0.5">Darshan Tobi</a>
+          </span>
+          <span class="flex items-center gap-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            June 14, 2026
+          </span>
+          <span class="flex items-center gap-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+            ~12 min read
+          </span>
+        </div>
+        <span class="font-mono text-xs bg-gray-800 text-gray-300 px-3 py-1 rounded border border-gray-700">
+          Ref: CERTIn-20460826
+        </span>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Main Content Layout with Sticky Sidebar -->
+  <div class="max-w-6xl mx-auto px-4 py-10 md:py-16">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-12 items-start">
+      
+      <!-- Table of Contents Sidebar (Left on Desktop) -->
+      <aside class="hidden lg:block lg:col-span-3 sticky top-8 max-h-[85vh] overflow-y-auto pr-4 border-r border-gray-200">
+        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Table of Contents</h4>
+        <nav id="toc" class="space-y-2.5 text-sm text-gray-500 border-l border-gray-200 pl-px"></nav>
+      </aside>
+
+      <!-- Main Column -->
+      <main class="lg:col-span-9 space-y-12">
+
+        <!-- TL;DR Callout Box -->
+        <section class="bg-red-50 border-l-4 border-brand-critical p-6 rounded-r-lg shadow-sm">
+          <div class="flex gap-4">
+            <div class="flex-shrink-0 text-brand-critical">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+              </svg>
+            </div>
+            <div>
+              <h4 class="font-bold text-brand-primary text-base mb-1">Executive Summary (TL;DR)</h4>
+              <p class="text-gray-700 text-sm leading-relaxed">
+                During an independent security assessment of the UPSC NRA Candidate Portal, I identified 15+ vulnerabilities across 4 severity levels — including 3 CRITICAL findings capable of mass PII exfiltration of Aadhaar numbers, biometrics, DigiLocker documents, and financial records for millions of candidates. All findings were responsibly reported to CERT-In and UPSC before any public disclosure. The portal has since been patched.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Stats Bar -->
+        <section class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div class="bg-white border border-gray-200 rounded-lg p-5 text-center shadow-sm">
+            <span class="block text-4xl font-extrabold text-brand-critical mb-1">5</span>
+            <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Critical Bugs</span>
+          </div>
+          <div class="bg-white border border-gray-200 rounded-lg p-5 text-center shadow-sm">
+            <span class="block text-4xl font-extrabold text-brand-high mb-1">4</span>
+            <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">High Bugs</span>
+          </div>
+          <div class="bg-white border border-gray-200 rounded-lg p-5 text-center shadow-sm">
+            <span class="block text-4xl font-extrabold text-brand-medium mb-1">4</span>
+            <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Medium Bugs</span>
+          </div>
+          <div class="bg-white border border-gray-200 rounded-lg p-5 text-center shadow-sm">
+            <span class="block text-4xl font-extrabold text-brand-success mb-1">✓</span>
+            <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">All Patched</span>
+          </div>
+        </section>
+
+        <!-- Vulnerability Summary Table -->
+        <section id="vulnerability-summary" class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-2xl font-bold tracking-tight flex items-center gap-2">
+              <span class="text-gray-400">#</span> Vulnerability Summary
+              <a href="#vulnerability-summary" class="anchor-link text-gray-300 hover:text-gray-500 ml-1 font-normal text-lg">#</a>
+            </h2>
+          </div>
+          
+          <div class="overflow-x-auto border border-gray-200 rounded-lg shadow-sm">
+            <table class="w-full text-left text-sm border-collapse bg-white">
+              <thead>
+                <tr class="bg-gray-50 border-b border-gray-200 text-gray-600 font-semibold">
+                  <th class="py-3.5 px-4 font-mono">ID</th>
+                  <th class="py-3.5 px-4">Vulnerability Description</th>
+                  <th class="py-3.5 px-4">Severity</th>
+                  <th class="py-3.5 px-4 font-mono text-center">CVSS</th>
+                  <th class="py-3.5 px-4 text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-150">
+                <tr class="hover:bg-gray-50 transition-colors">
+                  <td class="py-3 px-4 font-mono text-gray-500">V-01</td>
+                  <td class="py-3 px-4 font-medium">RSA Private Key Exposed in Client-Side JS</td>
+                  <td class="py-3 px-4"><span class="inline-flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-red-600 mr-2"></span>Critical</span></td>
+                  <td class="py-3 px-4 font-mono font-bold text-center text-red-600">9.8</td>
+                  <td class="py-3 px-4 text-center"><span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">Fixed</span></td>
+                </tr>
+                <tr class="hover:bg-gray-50 transition-colors bg-gray-50/30">
+                  <td class="py-3 px-4 font-mono text-gray-500">V-02</td>
+                  <td class="py-3 px-4 font-medium">DigiLocker OAuth Client Secret Hardcoded</td>
+                  <td class="py-3 px-4"><span class="inline-flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-red-600 mr-2"></span>Critical</span></td>
+                  <td class="py-3 px-4 font-mono font-bold text-center text-red-600">9.4</td>
+                  <td class="py-3 px-4 text-center"><span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">Fixed</span></td>
+                </tr>
+                <tr class="hover:bg-gray-50 transition-colors">
+                  <td class="py-3 px-4 font-mono text-gray-500">V-03</td>
+                  <td class="py-3 px-4 font-medium">IDOR — Mass PII Exfiltration via Sequential IDs</td>
+                  <td class="py-3 px-4"><span class="inline-flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-red-600 mr-2"></span>Critical</span></td>
+                  <td class="py-3 px-4 font-mono font-bold text-center text-red-600">9.4</td>
+                  <td class="py-3 px-4 text-center"><span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">Fixed</span></td>
+                </tr>
+                <tr class="hover:bg-gray-50 transition-colors bg-gray-50/30">
+                  <td class="py-3 px-4 font-mono text-gray-500">V-04</td>
+                  <td class="py-3 px-4 font-medium">Aadhaar Demo Auth API Exposed Without Rate Limit</td>
+                  <td class="py-3 px-4"><span class="inline-flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-red-600 mr-2"></span>Critical</span></td>
+                  <td class="py-3 px-4 font-mono font-bold text-center text-red-600">9.1</td>
+                  <td class="py-3 px-4 text-center"><span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">Fixed</span></td>
+                </tr>
+                <tr class="hover:bg-gray-50 transition-colors">
+                  <td class="py-3 px-4 font-mono text-gray-500">V-05</td>
+                  <td class="py-3 px-4 font-medium">Admin Login Endpoint — Zero Rate Limiting</td>
+                  <td class="py-3 px-4"><span class="inline-flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-red-600 mr-2"></span>Critical</span></td>
+                  <td class="py-3 px-4 font-mono font-bold text-center text-red-600">8.9</td>
+                  <td class="py-3 px-4 text-center"><span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">Fixed</span></td>
+                </tr>
+                <tr class="hover:bg-gray-50 transition-colors bg-gray-50/30">
+                  <td class="py-3 px-4 font-mono text-gray-500">V-06</td>
+                  <td class="py-3 px-4 font-medium">HMAC Request Signing Algorithm Exposed</td>
+                  <td class="py-3 px-4"><span class="inline-flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-amber-600 mr-2"></span>High</span></td>
+                  <td class="py-3 px-4 font-mono font-bold text-center text-amber-600">8.6</td>
+                  <td class="py-3 px-4 text-center"><span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">Fixed</span></td>
+                </tr>
+                <tr class="hover:bg-gray-50 transition-colors">
+                  <td class="py-3 px-4 font-mono text-gray-500">V-07</td>
+                  <td class="py-3 px-4 font-medium">UDID (Disability Card) Client Secret Hardcoded</td>
+                  <td class="py-3 px-4"><span class="inline-flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-amber-600 mr-2"></span>High</span></td>
+                  <td class="py-3 px-4 font-mono font-bold text-center text-amber-600">8.4</td>
+                  <td class="py-3 px-4 text-center"><span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">Fixed</span></td>
+                </tr>
+                <tr class="hover:bg-gray-50 transition-colors bg-gray-50/30">
+                  <td class="py-3 px-4 font-mono text-gray-500">V-08</td>
+                  <td class="py-3 px-4 font-medium">OTP Trigger Without Authentication (Any Mobile)</td>
+                  <td class="py-3 px-4"><span class="inline-flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-amber-600 mr-2"></span>High</span></td>
+                  <td class="py-3 px-4 font-mono font-bold text-center text-amber-600">8.2</td>
+                  <td class="py-3 px-4 text-center"><span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">Fixed</span></td>
+                </tr>
+                <tr class="hover:bg-gray-50 transition-colors">
+                  <td class="py-3 px-4 font-mono text-gray-500">V-09</td>
+                  <td class="py-3 px-4 font-medium">Unauthenticated User Enumeration via Search API</td>
+                  <td class="py-3 px-4"><span class="inline-flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-amber-600 mr-2"></span>High</span></td>
+                  <td class="py-3 px-4 font-mono font-bold text-center text-amber-600">7.5</td>
+                  <td class="py-3 px-4 text-center"><span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">Fixed</span></td>
+                </tr>
+                <tr class="hover:bg-gray-50 transition-colors bg-gray-50/30">
+                  <td class="py-3 px-4 font-mono text-gray-500">V-10</td>
+                  <td class="py-3 px-4 font-medium">Firebase Full Configuration Exposed</td>
+                  <td class="py-3 px-4"><span class="inline-flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-amber-600 mr-2"></span>High</span></td>
+                  <td class="py-3 px-4 font-mono font-bold text-center text-amber-600">7.2</td>
+                  <td class="py-3 px-4 text-center"><span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">Fixed</span></td>
+                </tr>
+                <tr class="hover:bg-gray-50 transition-colors">
+                  <td class="py-3 px-4 font-mono text-gray-500">V-11</td>
+                  <td class="py-3 px-4 font-medium">Password Hashing Algorithm Fully Client-Side</td>
+                  <td class="py-3 px-4"><span class="inline-flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-amber-600 mr-2"></span>High</span></td>
+                  <td class="py-3 px-4 font-mono font-bold text-center text-amber-600">7.0</td>
+                  <td class="py-3 px-4 text-center"><span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">Fixed</span></td>
+                </tr>
+                <tr class="hover:bg-gray-50 transition-colors bg-gray-50/30">
+                  <td class="py-3 px-4 font-mono text-gray-500">V-12</td>
+                  <td class="py-3 px-4 font-medium">JWT Stored in sessionStorage (XSS-Accessible)</td>
+                  <td class="py-3 px-4"><span class="inline-flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-amber-600 mr-2"></span>High</span></td>
+                  <td class="py-3 px-4 font-mono font-bold text-center text-amber-600">6.8</td>
+                  <td class="py-3 px-4 text-center"><span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">Fixed</span></td>
+                </tr>
+                <tr class="hover:bg-gray-50 transition-colors">
+                  <td class="py-3 px-4 font-mono text-gray-500">V-13</td>
+                  <td class="py-3 px-4 font-medium">BEL Logout API Key Hardcoded</td>
+                  <td class="py-3 px-4"><span class="inline-flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-blue-600 mr-2"></span>Medium</span></td>
+                  <td class="py-3 px-4 font-mono font-bold text-center text-blue-600">6.2</td>
+                  <td class="py-3 px-4 text-center"><span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">Fixed</span></td>
+                </tr>
+                <tr class="hover:bg-gray-50 transition-colors bg-gray-50/30">
+                  <td class="py-3 px-4 font-mono text-gray-500">V-14</td>
+                  <td class="py-3 px-4 font-medium">Test/Demo Server URL Exposed</td>
+                  <td class="py-3 px-4"><span class="inline-flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-blue-600 mr-2"></span>Medium</span></td>
+                  <td class="py-3 px-4 font-mono font-bold text-center text-blue-600">5.3</td>
+                  <td class="py-3 px-4 text-center"><span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">Fixed</span></td>
+                </tr>
+                <tr class="hover:bg-gray-50 transition-colors">
+                  <td class="py-3 px-4 font-mono text-gray-500">V-15</td>
+                  <td class="py-3 px-4 font-medium">19 Lazy-Loaded JS Chunks Publicly Accessible</td>
+                  <td class="py-3 px-4"><span class="inline-flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-blue-600 mr-2"></span>Medium</span></td>
+                  <td class="py-3 px-4 font-mono font-bold text-center text-blue-600">5.0</td>
+                  <td class="py-3 px-4 text-center"><span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">Fixed</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- How I Found It Section -->
+        <section id="how-i-found-it" class="space-y-4">
+          <h2 class="text-2xl font-bold tracking-tight">
+            🕵️ How I Found It
+            <a href="#how-i-found-it" class="anchor-link text-gray-300 hover:text-gray-500 ml-1 font-normal text-lg">#</a>
+          </h2>
+          <p class="text-gray-700 leading-relaxed text-sm md:text-base">
+            The entry point was a 14.6MB Angular production bundle — <code class="bg-gray-150 px-1 py-0.5 rounded font-mono text-sm text-red-600">main.375ee5cb2feed08e.js</code>. Angular apps ship their entire source in minified JS that runs in the browser. With a JS formatter and a bit of patience, the full application logic including API routes, cryptographic functions, and hardcoded secrets becomes readable.
+          </p>
+          <div class="p-4 bg-gray-100 rounded-lg border border-gray-200">
+            <span class="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-2">Tools of the Trade</span>
+            <div class="flex flex-wrap gap-2">
+              <span class="bg-white px-2.5 py-1 rounded text-xs font-mono border border-gray-200">Browser DevTools</span>
+              <span class="bg-white px-2.5 py-1 rounded text-xs font-mono border border-gray-200">curl</span>
+              <span class="bg-white px-2.5 py-1 rounded text-xs font-mono border border-gray-200">Python (Requests + PyCryptodome)</span>
+              <span class="bg-white px-2.5 py-1 rounded text-xs font-mono border border-gray-200">JS Pretty-Printer</span>
+              <span class="bg-white px-2.5 py-1 rounded text-xs font-mono border border-gray-200">grep / findstr</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Critical Findings (V-01 to V-05) -->
+        <section id="critical-findings" class="space-y-6">
+          <h2 class="text-2xl font-bold tracking-tight">
+            🔴 Critical Findings
+            <a href="#critical-findings" class="anchor-link text-gray-300 hover:text-gray-500 ml-1 font-normal text-lg">#</a>
+          </h2>
+
+          <!-- V-01 Card -->
+          <div class="bg-white border-l-4 border-red-600 rounded-r-lg border border-gray-200 shadow-sm p-6 space-y-4">
+            <div class="flex items-center justify-between">
+              <span class="px-2 py-0.5 bg-gray-100 rounded font-mono text-xs text-gray-600 font-semibold border border-gray-200">V-01</span>
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800 border border-red-200">CVSS 9.8</span>
+            </div>
+            <h3 class="text-lg font-bold text-brand-primary">RSA-2048 Private Key Exposed in Production JS</h3>
+            <p class="text-gray-600 text-sm leading-relaxed">
+              The application used RSA-PKCS1-v1.5 encryption for all sensitive API communication — including Aadhaar demographic data, salt values, and credential material. The private key used to decrypt server responses was embedded <strong>in plaintext</strong> inside the frontend JavaScript bundle. This means anyone who downloaded the JS file (it's public, no auth needed) had the decryption key for all encrypted server traffic.
+            </p>
+            
+            <!-- Code Block with Copy Button -->
+            <div class="relative">
+              <button onclick="copyCode(this)" class="absolute top-3 right-3 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 px-2 py-1 rounded font-mono transition-colors">Copy</button>
+              <pre class="bg-brand-codeBg text-brand-codeText font-mono text-xs p-4 rounded-lg overflow-x-auto"><code class="language-javascript">// Functions found in JS bundle:
+function encryptToServer(data) {
+    return pki.publicKeyFromPem(RSA_PUBLIC_KEY).encrypt(data, "RSAES-PKCS1-V1_5")
+}
+function decryptFromServer(data) {
+    return pki.privateKeyFromPem(RSA_PRIVATE_KEY).decrypt(atob(data), "RSAES-PKCS1-V1_5")
+}</code></pre>
+            </div>
+
+            <p class="text-gray-600 text-sm leading-relaxed">
+              The RSA key pair (both public and private) was hardcoded as string constants — shipped to every visitor's browser.
+            </p>
+
+            <div class="bg-red-50 border border-red-150 p-4 rounded-md">
+              <span class="font-bold text-red-800 text-xs uppercase tracking-widest block mb-1">Impact:</span>
+              <p class="text-red-700 text-sm">Complete compromise of transport-layer encryption. Any intercepted API response could be decrypted. Any request could be forged with valid signatures.</p>
+            </div>
+          </div>
+
+          <!-- V-02 Card -->
+          <div class="bg-white border-l-4 border-red-600 rounded-r-lg border border-gray-200 shadow-sm p-6 space-y-4">
+            <div class="flex items-center justify-between">
+              <span class="px-2 py-0.5 bg-gray-100 rounded font-mono text-xs text-gray-600 font-semibold border border-gray-200">V-02</span>
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800 border border-red-200">CVSS 9.4</span>
+            </div>
+            <h3 class="text-lg font-bold text-brand-primary">DigiLocker OAuth Client Credentials Exposed</h3>
+            <p class="text-gray-600 text-sm leading-relaxed">
+              DigiLocker is India's official digital document wallet — linked to citizens' Aadhaar, PAN card, driving licence, and more. The UPSC portal integrated with DigiLocker to verify candidate documents. The OAuth <code class="bg-gray-100 px-1 py-0.5 rounded font-mono text-xs">CLIENT_ID</code> and <code class="bg-gray-100 px-1 py-0.5 rounded font-mono text-xs">CLIENT_SECRET</code> for this DigiLocker integration were hardcoded in the JS bundle.
+            </p>
+            
+            <div class="relative">
+              <button onclick="copyCode(this)" class="absolute top-3 right-3 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 px-2 py-1 rounded font-mono transition-colors">Copy</button>
+              <pre class="bg-brand-codeBg text-brand-codeText font-mono text-xs p-4 rounded-lg overflow-x-auto"><code>CLIENT_ID:     0ca22ccc84c7c9f9811e47f8********
+CLIENT_SECRET: c05e91cb548ec3434c4048d8********</code></pre>
+            </div>
+
+            <div class="bg-red-50 border border-red-150 p-4 rounded-md">
+              <span class="font-bold text-red-800 text-xs uppercase tracking-widest block mb-1">Impact:</span>
+              <p class="text-red-700 text-sm">An attacker could use these credentials to impersonate the UPSC portal to DigiLocker — potentially gaining access to any candidate's Aadhaar, PAN, and driving licence via the DigiLocker OAuth flow. These are production credentials for a government-to-government API.</p>
+            </div>
+          </div>
+
+          <!-- V-03 Card -->
+          <div class="bg-white border-l-4 border-red-600 rounded-r-lg border border-gray-200 shadow-sm p-6 space-y-4">
+            <div class="flex items-center justify-between">
+              <span class="px-2 py-0.5 bg-gray-100 rounded font-mono text-xs text-gray-600 font-semibold border border-gray-200">V-03</span>
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800 border border-red-200">CVSS 9.4</span>
+            </div>
+            <h3 class="text-lg font-bold text-brand-primary">IDOR — Mass PII Exfiltration</h3>
+            <p class="text-gray-600 text-sm leading-relaxed">
+              Multiple candidate data endpoints accepted sequential numeric identifiers and did not enforce authorization checks against the requesting user's session. The <code class="bg-gray-150 px-1 py-0.5 rounded font-mono text-xs text-red-600">vault</code> endpoint is the most sensitive — it stores Aadhaar UID and eKYC data. With a valid session token (obtainable via normal registration), incrementing the ID parameter exposed other candidates' complete profiles.
+            </p>
+            
+            <div class="relative">
+              <button onclick="copyCode(this)" class="absolute top-3 right-3 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 px-2 py-1 rounded font-mono transition-colors">Copy</button>
+              <pre class="bg-brand-codeBg text-brand-codeText font-mono text-xs p-4 rounded-lg overflow-x-auto"><code>GET /ngrp_api/getfullprofile/Candidate/FullProfile/GetFUllProfile/{id}
+GET /ngrp_api/Candidate/V2/Profile/Get/{id}
+GET /ngrp_api/vault/V2/Register/{id}
+GET /ngrp_api/admin_api/Get_eAdmitCard/{id}</code></pre>
+            </div>
+
+            <div class="bg-red-50 border border-red-150 p-4 rounded-md">
+              <span class="font-bold text-red-800 text-xs uppercase tracking-widest block mb-1">Impact:</span>
+              <p class="text-red-700 text-sm">With a valid session token and a script, bulk exfiltration of PII for millions of UPSC NRA candidates was technically feasible via sequential enumeration.</p>
+            </div>
+          </div>
+
+          <!-- V-04 Card -->
+          <div class="bg-white border-l-4 border-red-600 rounded-r-lg border border-gray-200 shadow-sm p-6 space-y-4">
+            <div class="flex items-center justify-between">
+              <span class="px-2 py-0.5 bg-gray-100 rounded font-mono text-xs text-gray-600 font-semibold border border-gray-200">V-04</span>
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800 border border-red-200">CVSS 9.1</span>
+            </div>
+            <h3 class="text-lg font-bold text-brand-primary">Aadhaar Demo Auth API Exposed</h3>
+            <p class="text-gray-600 text-sm leading-relaxed">
+              The portal integrated with UIDAI's Aadhaar Demo Authentication API to verify candidate identity. These endpoints were accessible from the frontend and — critically — the <code class="bg-gray-150 px-1 py-0.5 rounded font-mono text-xs text-red-600">demoauth</code> endpoints revealed their expected request schema via error responses when called without authentication.
+            </p>
+            
+            <div class="relative">
+              <button onclick="copyCode(this)" class="absolute top-3 right-3 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 px-2 py-1 rounded font-mono transition-colors">Copy</button>
+              <pre class="bg-brand-codeBg text-brand-codeText font-mono text-xs p-4 rounded-lg overflow-x-auto"><code class="language-json">// Confirmed response (HTTP 422) from /ngrp_api/aadhar/otp/generate-otp-demoauth/:
+{
+  "detail": [
+    {"type": "missing", "loc": ["body", "consent"], "msg": "Field required"},
+    {"type": "missing", "loc": ["body", "name"], "msg": "Field required"},
+    {"type": "missing", "loc": ["body", "gender"], "msg": "Field required"},
+    {"type": "missing", "loc": ["body", "dob"], "msg": "Field required"},
+    {"type": "missing", "loc": ["body", "applicantID"], "msg": "Field required"}
+  ]
+}</code></pre>
+            </div>
+
+            <div class="bg-red-50 border border-red-150 p-4 rounded-md">
+              <span class="font-bold text-red-800 text-xs uppercase tracking-widest block mb-1">Impact:</span>
+              <p class="text-red-700 text-sm">The endpoint was reachable, and the error response documented the exact request body needed. Combined with V-01 (RSA key) and V-03 (IDOR for applicantIDs), this created a full attack chain for Aadhaar eKYC data extraction.</p>
+            </div>
+          </div>
+
+          <!-- V-05 Card -->
+          <div class="bg-white border-l-4 border-red-600 rounded-r-lg border border-gray-200 shadow-sm p-6 space-y-4">
+            <div class="flex items-center justify-between">
+              <span class="px-2 py-0.5 bg-gray-100 rounded font-mono text-xs text-gray-600 font-semibold border border-gray-200">V-05</span>
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800 border border-red-200">CVSS 8.9</span>
+            </div>
+            <h3 class="text-lg font-bold text-brand-primary">Admin Portal — Zero Rate Limiting</h3>
+            <p class="text-gray-600 text-sm leading-relaxed">
+              The admin portal login at <code class="bg-gray-100 px-1 py-0.5 rounded font-mono text-xs">/access-block-com</code> used a separate auth flow with RSA-encrypted credentials. The endpoint had zero rate limiting. I ran 650+ authentication attempts against it with no lockout, no CAPTCHA, and no throttling response.
+            </p>
+            
+            <div class="relative">
+              <button onclick="copyCode(this)" class="absolute top-3 right-3 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 px-2 py-1 rounded font-mono transition-colors">Copy</button>
+              <pre class="bg-brand-codeBg text-brand-codeText font-mono text-xs p-4 rounded-lg overflow-x-auto"><code class="language-javascript">login() {
+    const encEmail = btoa(stringToBytes(this.email));
+    const encMobile = btoa(stringToBytes(this.mobile));
+    this.http.post(API_URL + "access-login/get-access", {
+        username: encEmail,
+        password: encMobile
+    })
+}</code></pre>
+            </div>
+
+            <div class="bg-red-50 border border-red-150 p-4 rounded-md">
+              <span class="font-bold text-red-800 text-xs uppercase tracking-widest block mb-1">Impact:</span>
+              <p class="text-red-700 text-sm">Admin panel fully open to brute force. On success: access to admin_api/Get_eAdmitCard/ for all candidates, full document download, admit card generation.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- High Severity Findings (V-06 to V-12) -->
+        <section id="high-severity-findings" class="space-y-6">
+          <h2 class="text-2xl font-bold tracking-tight">
+            🟠 High Severity Findings
+            <a href="#high-severity-findings" class="anchor-link text-gray-300 hover:text-gray-500 ml-1 font-normal text-lg">#</a>
+          </h2>
+
+          <!-- V-06 Card -->
+          <div class="bg-white border-l-4 border-amber-500 rounded-r-lg border border-gray-200 shadow-sm p-6 space-y-4">
+            <div class="flex items-center justify-between">
+              <span class="px-2 py-0.5 bg-gray-100 rounded font-mono text-xs text-gray-600 font-semibold border border-gray-200">V-06</span>
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">CVSS 8.6</span>
+            </div>
+            <h3 class="text-lg font-bold text-brand-primary">HMAC Request Signing — Fully Exposed</h3>
+            <p class="text-gray-600 text-sm leading-relaxed">
+              The API Gateway used HMAC-SHA512 to sign all requests. The signing algorithm and all its secret components were fully retrievable from the client JS bundle.
+            </p>
+            
+            <div class="relative">
+              <button onclick="copyCode(this)" class="absolute top-3 right-3 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 px-2 py-1 rounded font-mono transition-colors">Copy</button>
+              <pre class="bg-brand-codeBg text-brand-codeText font-mono text-xs p-4 rounded-lg overflow-x-auto"><code class="language-javascript">// Algorithm exposed in full:
+SecretKey = SHA512(HMAC_SALT + timestamp + SECRET_UUID)
+// Where:
+HMAC_SALT = "rz8LuOtFBXphj9WQfvFA"
+SECRET_UUID = "C4A29052-0500-4361-9A3C-BD4B9B7*****"
+TIMESTAMP_FORMAT = "DDMMYYYYHHMMSS" (UTC)</code></pre>
+            </div>
+
+            <div class="bg-amber-50 border border-amber-150 p-4 rounded-md">
+              <span class="font-bold text-amber-800 text-xs uppercase tracking-widest block mb-1">Impact:</span>
+              <p class="text-amber-700 text-sm">Any attacker could generate valid HMAC-signed requests to any API endpoint — bypassing the primary authentication layer for all backend services.</p>
+            </div>
+          </div>
+
+          <!-- V-07 Card -->
+          <div class="bg-white border-l-4 border-amber-500 rounded-r-lg border border-gray-200 shadow-sm p-6 space-y-4">
+            <div class="flex items-center justify-between">
+              <span class="px-2 py-0.5 bg-gray-100 rounded font-mono text-xs text-gray-600 font-semibold border border-gray-200">V-07</span>
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">CVSS 8.4</span>
+            </div>
+            <h3 class="text-lg font-bold text-brand-primary">UDID Disability Card API Credentials Exposed</h3>
+            <p class="text-gray-600 text-sm leading-relaxed">
+              The portal integrated with UDID (Unique Disability ID) to verify physically challenged candidates' disability status. Credentials for this API were hardcoded:
+            </p>
+            
+            <div class="relative">
+              <button onclick="copyCode(this)" class="absolute top-3 right-3 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 px-2 py-1 rounded font-mono transition-colors">Copy</button>
+              <pre class="bg-brand-codeBg text-brand-codeText font-mono text-xs p-4 rounded-lg overflow-x-auto"><code>UDID_CLIENT_ID:     4fb711bb4c24db070da4e8b6********
+UDID_CLIENT_SECRET: c63884422c269a584fc6b0f9********
+API: https://swavlambancard.gov.in/api/getApplicationInformation/</code></pre>
+            </div>
+
+            <div class="bg-amber-50 border border-amber-150 p-4 rounded-md">
+              <span class="font-bold text-amber-800 text-xs uppercase tracking-widest block mb-1">Impact:</span>
+              <p class="text-amber-700 text-sm">The API response on test call returned "Your IP is not whitelisted" — indicating IP restrictions were the only secondary protection layer.</p>
+            </div>
+          </div>
+
+          <!-- V-08 Card -->
+          <div class="bg-white border-l-4 border-amber-500 rounded-r-lg border border-gray-200 shadow-sm p-6 space-y-4">
+            <div class="flex items-center justify-between">
+              <span class="px-2 py-0.5 bg-gray-100 rounded font-mono text-xs text-gray-600 font-semibold border border-gray-200">V-08</span>
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">CVSS 8.2</span>
+            </div>
+            <h3 class="text-lg font-bold text-brand-primary">OTP Trigger Without Authentication</h3>
+            <p class="text-gray-600 text-sm leading-relaxed">
+              The mobile login flow allowed triggering an OTP SMS to **any registered mobile number** with zero authentication. Additionally, <code class="bg-gray-100 px-1 py-0.5 rounded font-mono text-xs">deviceToken</code> was static ("device-info"), indicating absence of real client fingerprinting controls.
+            </p>
+            
+            <div class="relative">
+              <button onclick="copyCode(this)" class="absolute top-3 right-3 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 px-2 py-1 rounded font-mono transition-colors">Copy</button>
+              <pre class="bg-brand-codeBg text-brand-codeText font-mono text-xs p-4 rounded-lg overflow-x-auto"><code class="language-json">// Request:
+POST /ngrp_api/authentication/User/V1/MobileLogin/validate_User
+Body: { "deviceToken": "device-info", "mobileNo": "XXXXXXXXXX" }
+
+// Confirmed response:
+{
+  "status": true,
+  "message": "OTP has been sent to registered mobile number",
+  "response": {
+    "tempId": "6a1ffe3ed5b037d354e40e52",
+    "txnId": "6a1ffe3ed5b037d354e40e52"
+  }
+}</code></pre>
+            </div>
+
+            <div class="bg-amber-50 border border-amber-150 p-4 rounded-md">
+              <span class="font-bold text-amber-800 text-xs uppercase tracking-widest block mb-1">Impact:</span>
+              <p class="text-amber-700 text-sm">OTP flood/spam attack on any registered candidate's mobile number. Could be used to harass or disrupt candidates before exam dates.</p>
+            </div>
+          </div>
+
+          <!-- V-09 Card -->
+          <div class="bg-white border-l-4 border-amber-500 rounded-r-lg border border-gray-200 shadow-sm p-6 space-y-4">
+            <div class="flex items-center justify-between">
+              <span class="px-2 py-0.5 bg-gray-100 rounded font-mono text-xs text-gray-600 font-semibold border border-gray-200">V-09</span>
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">CVSS 7.5</span>
+            </div>
+            <h3 class="text-lg font-bold text-brand-primary">Unauthenticated User Enumeration via Search API</h3>
+            <p class="text-gray-600 text-sm leading-relaxed">
+              Two search endpoints confirmed whether a mobile number or email was registered — without any session verification context:
+            </p>
+            
+            <div class="overflow-x-auto border border-gray-200 rounded-lg">
+              <table class="w-full text-left text-xs bg-white">
+                <tr class="bg-gray-50 border-b border-gray-200 font-semibold text-gray-500">
+                  <th class="py-2.5 px-3">Endpoint</th>
+                  <th class="py-2.5 px-3">Input</th>
+                  <th class="py-2.5 px-3">Registered Response</th>
+                  <th class="py-2.5 px-3">Unregistered Response</th>
+                </tr>
+                <tr>
+                  <td class="py-2 px-3 font-mono">onboarding/V1/Search/MobileNo</td>
+                  <td class="py-2 px-3">Mobile number</td>
+                  <td class="py-2 px-3 text-red-600">"Mobile No. is already registered"</td>
+                  <td class="py-2 px-3">false</td>
+                </tr>
+                <tr class="bg-gray-50/55">
+                  <td class="py-2 px-3 font-mono">onboarding/V1/Search/EmailId</td>
+                  <td class="py-2 px-3">Email address</td>
+                  <td class="py-2 px-3 text-red-600">"Email ID is already registered"</td>
+                  <td class="py-2 px-3">"not registered"</td>
+                </tr>
+              </table>
+            </div>
+
+            <div class="bg-amber-50 border border-amber-150 p-4 rounded-md">
+              <span class="font-bold text-amber-800 text-xs uppercase tracking-widest block mb-1">Impact:</span>
+              <p class="text-amber-700 text-sm">An attacker could scrape mobile number databases and enumerate which candidates are registered on the UPSC portal — leaking registration statuses.</p>
+            </div>
+          </div>
+
+          <!-- V-10 Card -->
+          <div class="bg-white border-l-4 border-amber-500 rounded-r-lg border border-gray-200 shadow-sm p-6 space-y-4">
+            <div class="flex items-center justify-between">
+              <span class="px-2 py-0.5 bg-gray-100 rounded font-mono text-xs text-gray-600 font-semibold border border-gray-200">V-10</span>
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">CVSS 7.2</span>
+            </div>
+            <h3 class="text-lg font-bold text-brand-primary">Firebase Full Configuration Exposed</h3>
+            <p class="text-gray-600 text-sm leading-relaxed">
+              Complete Firebase project configuration was found hardcoded inside the frontend JS bundle.
+            </p>
+            
+            <div class="relative">
+              <button onclick="copyCode(this)" class="absolute top-3 right-3 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 px-2 py-1 rounded font-mono transition-colors">Copy</button>
+              <pre class="bg-brand-codeBg text-brand-codeText font-mono text-xs p-4 rounded-lg overflow-x-auto"><code>apiKey:           AIzaSyDRuNakzmVTaeom8LMLmTTox********
+projectId:        ndrp-35433
+storageBucket:    ndrp-35433.appspot.com
+messagingSenderId: 682184681654
+appId:            1:682184681654:web:a4261be8c68243d8be5e17
+VAPID Key:        BEZNt1hE9Ra9Y7PE9np_NJ7GzH**************</code></pre>
+            </div>
+
+            <div class="bg-amber-50 border border-amber-150 p-4 rounded-md">
+              <span class="font-bold text-amber-800 text-xs uppercase tracking-widest block mb-1">Impact:</span>
+              <p class="text-amber-700 text-sm">The VAPID key allows sending push notifications to all subscribed users. If Firebase Storage/Database security rules were misconfigured, unauthorized access to databases was possible.</p>
+            </div>
+          </div>
+
+          <!-- V-11 Card -->
+          <div class="bg-white border-l-4 border-amber-500 rounded-r-lg border border-gray-200 shadow-sm p-6 space-y-4">
+            <div class="flex items-center justify-between">
+              <span class="px-2 py-0.5 bg-gray-100 rounded font-mono text-xs text-gray-600 font-semibold border border-gray-200">V-11</span>
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">CVSS 7.0</span>
+            </div>
+            <h3 class="text-lg font-bold text-brand-primary">Password Hashing Algorithm Fully Client-Side</h3>
+            <p class="text-gray-600 text-sm leading-relaxed">
+              The complete password hashing algorithm was visible in the JS bundle. Since the <code class="bg-gray-100 px-1 py-0.5 rounded font-mono text-xs">saltkey</code> retrieval endpoint was unauthenticated, password hashes could be prepared directly client-side.
+            </p>
+            
+            <div class="relative">
+              <button onclick="copyCode(this)" class="absolute top-3 right-3 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 px-2 py-1 rounded font-mono transition-colors">Copy</button>
+              <pre class="bg-brand-codeBg text-brand-codeText font-mono text-xs p-4 rounded-lg overflow-x-auto"><code class="language-javascript">// Hashing pipeline:
+const step1 = CryptoJS.SHA512(password).toString(CryptoJS.enc.Hex);
+const step2 = step1 + serverSalt;
+const step3 = CryptoJS.SHA512(step2).toString(CryptoJS.enc.Hex);
+const finalHash = btoa(unescape(step3));</code></pre>
+            </div>
+
+            <div class="bg-amber-50 border border-amber-150 p-4 rounded-md">
+              <span class="font-bold text-amber-800 text-xs uppercase tracking-widest block mb-1">Impact:</span>
+              <p class="text-amber-700 text-sm">Offline hash computation against known password dictionaries became trivial with the logic exposed.</p>
+            </div>
+          </div>
+
+          <!-- V-12 Card -->
+          <div class="bg-white border-l-4 border-amber-500 rounded-r-lg border border-gray-200 shadow-sm p-6 space-y-4">
+            <div class="flex items-center justify-between">
+              <span class="px-2 py-0.5 bg-gray-100 rounded font-mono text-xs text-gray-600 font-semibold border border-gray-200">V-12</span>
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">CVSS 6.8</span>
+            </div>
+            <h3 class="text-lg font-bold text-brand-primary">JWT Token Stored in sessionStorage</h3>
+            <p class="text-gray-600 text-sm leading-relaxed">
+              Login tokens (JWT) were stored in <code class="bg-gray-100 px-1 py-0.5 rounded font-mono text-xs">sessionStorage</code> under the key <code class="bg-gray-100 px-1 py-0.5 rounded font-mono text-xs">userData</code> — directly accessible to any script running in the browser context.
+            </p>
+            
+            <div class="relative">
+              <button onclick="copyCode(this)" class="absolute top-3 right-3 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 px-2 py-1 rounded font-mono transition-colors">Copy</button>
+              <pre class="bg-brand-codeBg text-brand-codeText font-mono text-xs p-4 rounded-lg overflow-x-auto"><code class="language-javascript">// On login:
+sessionStorage.setItem("userData", JSON.stringify(tokenObject));
+
+// On page load:
+const user = JSON.parse(sessionStorage.getItem("userData"));</code></pre>
+            </div>
+
+            <div class="bg-amber-50 border border-amber-150 p-4 rounded-md">
+              <span class="font-bold text-amber-800 text-xs uppercase tracking-widest block mb-1">Impact:</span>
+              <p class="text-amber-700 text-sm">Any cross-site scripting (XSS) vulnerability on the domain could lead to immediate session hijacking and UI guard bypasses.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Medium Severity Findings (V-13 to V-15) -->
+        <section id="medium-severity-findings" class="space-y-6">
+          <h2 class="text-2xl font-bold tracking-tight font-sans">
+            🟡 Medium Severity Findings
+            <a href="#medium-severity-findings" class="anchor-link text-gray-300 hover:text-gray-500 ml-1 font-normal text-lg">#</a>
+          </h2>
+          
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-white border-t-4 border-blue-600 rounded-b-lg border border-gray-200 shadow-sm p-5 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="px-2 py-0.2 bg-gray-100 rounded font-mono text-[10px] text-gray-500 border border-gray-200">V-13</span>
+                <span class="text-xs font-bold text-blue-600">CVSS 6.2</span>
+              </div>
+              <h4 class="font-bold text-sm">BEL Logout API Key Hardcoded</h4>
+              <p class="text-xs text-gray-600 leading-relaxed">
+                The key <code class="bg-gray-50 px-1 py-0.5 text-[10px] font-mono">5758f92b-22ef-4b80-aaab-3e9a5309****</code> was used as an X-API-KEY header to force candidate logouts.
+              </p>
+            </div>
+
+            <div class="bg-white border-t-4 border-blue-600 rounded-b-lg border border-gray-200 shadow-sm p-5 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="px-2 py-0.2 bg-gray-100 rounded font-mono text-[10px] text-gray-500 border border-gray-200">V-14</span>
+                <span class="text-xs font-bold text-blue-600">CVSS 5.3</span>
+              </div>
+              <h4 class="font-bold text-sm">Test/Demo Server URL Exposed</h4>
+              <p class="text-xs text-gray-600 leading-relaxed">
+                The internal endpoint URL <code class="bg-gray-50 px-1 py-0.5 text-[10px] font-mono">https://nraportaldemo.nic.in/210871_gateway/</code> was fully exposed.
+              </p>
+            </div>
+
+            <div class="bg-white border-t-4 border-blue-600 rounded-b-lg border border-gray-200 shadow-sm p-5 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="px-2 py-0.2 bg-gray-100 rounded font-mono text-[10px] text-gray-500 border border-gray-200">V-15</span>
+                <span class="text-xs font-bold text-blue-600">CVSS 5.0</span>
+              </div>
+              <h4 class="font-bold text-sm">Predictable Lazy-Loaded Chunks</h4>
+              <p class="text-xs text-gray-600 leading-relaxed">
+                19 predictable chunk files containing frontend routing tables and logic were accessible without authorization.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Attack Chain Section -->
+        <section id="attack-chain" class="space-y-4">
+          <h2 class="text-2xl font-bold tracking-tight">
+            🔗 Attack Chain — How These Combine
+            <a href="#attack-chain" class="anchor-link text-gray-300 hover:text-gray-500 ml-1 font-normal text-lg">#</a>
+          </h2>
+          <p class="text-gray-700 leading-relaxed text-sm md:text-base">
+            The real danger wasn't individual findings — it was how they chained together. Below is a step-by-step visual of how an attacker could move from unauthenticated discovery to total profile decryption:
+          </p>
+
+          <!-- Visual Flow Diagram -->
+          <div class="bg-slate-900 text-white rounded-xl p-6 md:p-8 border border-slate-800 space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-6 gap-4 items-center">
+              
+              <!-- Step 1 -->
+              <div class="bg-slate-800 p-4 rounded-lg border border-slate-700 text-center relative">
+                <span class="absolute top-2 left-2 text-[10px] font-mono text-amber-500 font-bold">1</span>
+                <span class="block font-mono text-xs text-amber-400 font-bold mb-1">V-09</span>
+                <span class="text-xs text-gray-300">User Enumeration</span>
+                <p class="text-[10px] text-gray-400 mt-2">Find registered target mobile</p>
+              </div>
+
+              <div class="text-center text-gray-500 hidden md:block">➔</div>
+
+              <!-- Step 2 -->
+              <div class="bg-slate-800 p-4 rounded-lg border border-slate-700 text-center relative">
+                <span class="absolute top-2 left-2 text-[10px] font-mono text-amber-500 font-bold">2</span>
+                <span class="block font-mono text-xs text-amber-400 font-bold mb-1">V-08</span>
+                <span class="text-xs text-gray-300">OTP Trigger</span>
+                <p class="text-[10px] text-gray-400 mt-2">Get txnId context</p>
+              </div>
+
+              <div class="text-center text-gray-500 hidden md:block">➔</div>
+
+              <!-- Step 3 -->
+              <div class="bg-slate-800 p-4 rounded-lg border border-slate-700 text-center relative">
+                <span class="absolute top-2 left-2 text-[10px] font-mono text-amber-500 font-bold">3</span>
+                <span class="block font-mono text-xs text-amber-400 font-bold mb-1">V-06</span>
+                <span class="text-xs text-gray-300">HMAC Bypass</span>
+                <p class="text-[10px] text-gray-400 mt-2">Sign request packets</p>
+              </div>
+
+              <div class="text-center text-gray-500 hidden md:block">➔</div>
+              
+            </div>
+
+            <div class="text-center text-gray-600 font-bold text-xl py-1 hidden md:block">⬇</div>
+
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
+              <!-- Step 4 -->
+              <div class="bg-slate-800 p-4 rounded-lg border border-slate-700 text-center relative">
+                <span class="absolute top-2 left-2 text-[10px] font-mono text-red-500 font-bold">4</span>
+                <span class="block font-mono text-xs text-red-400 font-bold mb-1">V-01</span>
+                <span class="text-xs text-gray-300">RSA Decryption</span>
+                <p class="text-[10px] text-gray-400 mt-2">Expose crypt keys</p>
+              </div>
+
+              <div class="text-center text-gray-500 hidden md:block">➔</div>
+
+              <!-- Step 5 -->
+              <div class="bg-slate-800 p-4 rounded-lg border border-slate-700 text-center relative">
+                <span class="absolute top-2 left-2 text-[10px] font-mono text-red-500 font-bold">5</span>
+                <span class="block font-mono text-xs text-red-400 font-bold mb-1">V-03</span>
+                <span class="text-xs text-gray-300">IDOR Query</span>
+                <p class="text-[10px] text-gray-400 mt-2">Fetch applicant profiles</p>
+              </div>
+
+              <div class="text-center text-gray-500 hidden md:block">➔</div>
+
+              <!-- Step 6 -->
+              <div class="bg-slate-800 p-4 rounded-lg border border-slate-700 text-center relative">
+                <span class="absolute top-2 left-2 text-[10px] font-mono text-red-500 font-bold">6</span>
+                <span class="block font-mono text-xs text-red-400 font-bold mb-1">V-04</span>
+                <span class="text-xs text-gray-300">Aadhaar Demo</span>
+                <p class="text-[10px] text-gray-400 mt-2">Decrypt eKYC demography</p>
+              </div>
+            </div>
+
+            <div class="bg-slate-950 p-4 rounded-lg border border-red-900 text-center">
+              <span class="block font-bold text-red-500 text-xs uppercase tracking-wider mb-1">Chain Resolution Result:</span>
+              <p class="text-gray-300 text-xs">Mass extraction of Aadhaar demographic records and profile documents without user interaction.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Tools & Proof of Concept -->
+        <section id="proof-of-concept" class="space-y-6">
+          <h2 class="text-2xl font-bold tracking-tight">
+            🛠️ Tools & Proof of Concept
+            <a href="#proof-of-concept" class="anchor-link text-gray-300 hover:text-gray-500 ml-1 font-normal text-lg">#</a>
+          </h2>
+          <p class="text-gray-700 leading-relaxed text-sm md:text-base">
+            I built a Python toolkit (<code class="bg-gray-100 px-1 py-0.5 rounded font-mono text-xs">idor_attack.py</code>) during the assessment to verify and demonstrate the attack chains. It implemented RSA decryption using the exposed key pair, HMAC signature calculations, automated profile sweeps, and login simulation triggers.
+          </p>
+
+          <!-- Screenshots side by side / block -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <!-- Python Toolkit Screenshot -->
+            <div class="space-y-2">
+              <div class="rounded-lg border border-slate-800 overflow-hidden shadow-md">
+                <!-- Terminal Title Bar -->
+                <div class="bg-slate-900 px-4 py-2 flex items-center justify-between border-b border-slate-800">
+                  <div class="flex space-x-1.5">
+                    <span class="w-3 h-3 rounded-full bg-red-500"></span>
+                    <span class="w-3 h-3 rounded-full bg-yellow-500"></span>
+                    <span class="w-3 h-3 rounded-full bg-green-500"></span>
+                  </div>
+                  <span class="text-[10px] font-mono text-slate-400">idor_attack.py — Exploitation Toolkit</span>
+                  <div class="w-10"></div>
+                </div>
+                <!-- Image Content -->
+                <div class="bg-slate-950 p-1 flex items-center justify-center min-h-[220px]">
+                  <img src="" alt="toolkit screenshot" class="max-h-[260px] opacity-75">
+                  <span class="text-xs font-mono text-slate-500 absolute">Image Placeholder: Toolkit Interface</span>
+                </div>
+              </div>
+              <p class="text-xs text-gray-500 italic text-center">Toolkit console menu displaying exploit automation capabilities.</p>
+            </div>
+
+            <!-- Thonny IDE Screenshot -->
+            <div class="space-y-2">
+              <div class="rounded-lg border border-slate-800 overflow-hidden shadow-md">
+                <!-- Terminal Title Bar -->
+                <div class="bg-slate-900 px-4 py-2 flex items-center justify-between border-b border-slate-800">
+                  <div class="flex space-x-1.5">
+                    <span class="w-3 h-3 rounded-full bg-red-500"></span>
+                    <span class="w-3 h-3 rounded-full bg-yellow-500"></span>
+                    <span class="w-3 h-3 rounded-full bg-green-500"></span>
+                  </div>
+                  <span class="text-[10px] font-mono text-slate-400">CTF Menu showing all confirmed attack vectors</span>
+                  <div class="w-10"></div>
+                </div>
+                <!-- Image Content -->
+                <div class="bg-slate-950 p-1 flex items-center justify-center min-h-[220px]">
+                  <img src="" alt="toolkit screenshot" class="max-h-[260px] opacity-75">
+                  <span class="text-xs font-mono text-slate-500 absolute">Image Placeholder: IDE CTF script</span>
+                </div>
+              </div>
+              <p class="text-xs text-gray-500 italic text-center font-sans">Thonny IDE running the target verification suites.</p>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- Disclosure Timeline -->
+        <section id="disclosure-timeline" class="space-y-6">
+          <h2 class="text-2xl font-bold tracking-tight">
+            📅 Disclosure Timeline
+            <a href="#disclosure-timeline" class="anchor-link text-gray-300 hover:text-gray-500 ml-1 font-normal text-lg">#</a>
+          </h2>
+          
+          <div class="relative border-l-2 border-gray-200 ml-3 pl-6 space-y-8">
+            
+            <!-- Item 1 -->
+            <div class="relative">
+              <div class="absolute -left-[31px] top-1.5 w-4 h-4 rounded-full bg-green-600 border-4 border-white shadow-sm"></div>
+              <div class="text-xs font-mono text-gray-500 mb-1">May 2026</div>
+              <h4 class="font-bold text-sm text-brand-primary">Vulnerabilities Discovered</h4>
+              <p class="text-xs text-gray-500">Initial discovery of vulnerabilities via Angular bundle analysis.</p>
+            </div>
+
+            <!-- Item 2 -->
+            <div class="relative">
+              <div class="absolute -left-[31px] top-1.5 w-4 h-4 rounded-full bg-blue-600 border-4 border-white shadow-sm"></div>
+              <div class="text-xs font-mono text-gray-500 mb-1">June 3, 2026 — 11:36 AM</div>
+              <h4 class="font-bold text-sm text-brand-primary">Sent Report to CERT-In and UPSC</h4>
+              <p class="text-xs text-gray-500">Emailed complete technical findings breakdown packet under responsible disclosure guidelines.</p>
+            </div>
+
+            <!-- Item 3 -->
+            <div class="relative">
+              <div class="absolute -left-[31px] top-1.5 w-4 h-4 rounded-full bg-amber-500 border-4 border-white shadow-sm"></div>
+              <div class="text-xs font-mono text-gray-500 mb-1">June 3, 2026 — 9:07 PM</div>
+              <h4 class="font-bold text-sm text-brand-primary">CERT-In Acknowledged Incident</h4>
+              <p class="text-xs text-gray-500">Assigned tracking indicator <strong>Ref: CERTIn-20460826</strong> and routed to national portal authorities.</p>
+            </div>
+
+            <!-- Item 4 -->
+            <div class="relative">
+              <div class="absolute -left-[31px] top-1.5 w-4 h-4 rounded-full bg-red-600 border-4 border-white shadow-sm"></div>
+              <div class="text-xs font-mono text-gray-500 mb-1">June 2026 (weeks later)</div>
+              <h4 class="font-bold text-sm text-brand-primary">All Vulnerabilities Confirmed Patched</h4>
+              <p class="text-xs text-gray-500 font-sans">UPSC verification confirms security boundaries remediated and client code clean.</p>
+            </div>
+
+            <!-- Item 5 -->
+            <div class="relative">
+              <div class="absolute -left-[31px] top-1.5 w-4 h-4 rounded-full bg-green-600 border-4 border-white shadow-sm"></div>
+              <div class="text-xs font-mono text-gray-500 mb-1">June 14, 2026</div>
+              <h4 class="font-bold text-sm text-brand-primary">Public Disclosure Published</h4>
+              <p class="text-xs text-gray-500">Public blog article released detailing mitigation mechanisms.</p>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- Remediation Confirmed Section -->
+        <section id="remediation-confirmed" class="space-y-4">
+          <h2 class="text-2xl font-bold tracking-tight">
+            ✅ Remediation Confirmed
+            <a href="#remediation-confirmed" class="anchor-link text-gray-300 hover:text-gray-500 ml-1 font-normal text-lg">#</a>
+          </h2>
+          <p class="text-gray-700 leading-relaxed text-sm md:text-base">
+            All 15+ findings are patched. Specific fixes observed on the production target:
+          </p>
+          <ul class="space-y-2 text-sm text-gray-600 pl-5 list-disc">
+            <li>RSA private key removed from client bundle — encryption now server-side only.</li>
+            <li>OAuth secrets rotated and moved to secure backend configurations.</li>
+            <li>Rate limiting controls integrated on admin login, OTP, and candidate lookup search endpoints.</li>
+            <li>IDOR resolved with robust identity verification filters on all profile routes.</li>
+            <li>Firebase credentials restricted with stricter security rules.</li>
+            <li>HMAC sign routines migrated to private backend APIs.</li>
+          </ul>
+        </section>
+
+        <!-- Key Takeaways -->
+        <section id="key-takeaways" class="space-y-4">
+          <h2 class="text-2xl font-bold tracking-tight">
+            💡 Key Takeaways for Developers
+            <a href="#key-takeaways" class="anchor-link text-gray-300 hover:text-gray-500 ml-1 font-normal text-lg">#</a>
+          </h2>
+          
+          <div class="space-y-4">
+            <div class="flex gap-4 items-start">
+              <span class="flex-shrink-0 w-6 h-6 rounded-full bg-red-100 text-red-600 flex items-center justify-center font-bold text-xs">1</span>
+              <div>
+                <h4 class="font-bold text-sm">Never ship private keys in frontend code</h4>
+                <p class="text-xs text-gray-500 mt-0.5">Sensitive cryptographic keys belong strictly behind server configurations. Obfuscating is not encrypting.</p>
+              </div>
+            </div>
+
+            <div class="flex gap-4 items-start">
+              <span class="flex-shrink-0 w-6 h-6 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center font-bold text-xs">2</span>
+              <div>
+                <h4 class="font-bold text-sm">OAuth client secrets belong in backends</h4>
+                <p class="text-xs text-gray-500 mt-0.5">A client-side bundle cannot hide credentials. Treat anything sent to the browser as public information.</p>
+              </div>
+            </div>
+
+            <div class="flex gap-4 items-start">
+              <span class="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs">3</span>
+              <div>
+                <h4 class="font-bold text-sm">Rate limit everything</h4>
+                <p class="text-xs text-gray-500 mt-0.5">Verification routes, login endpoints, search boxes, and OTP triggers must use CAPTCHA and request throttling.</p>
+              </div>
+            </div>
+
+            <div class="flex gap-4 items-start">
+              <span class="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-bold text-xs">4</span>
+              <div>
+                <h4 class="font-bold text-sm">Authorization is different from Authentication</h4>
+                <p class="text-xs text-gray-500 mt-0.5">A valid session token shouldn't grant full database access. Always enforce object-level ownership checks server-side.</p>
+              </div>
+            </div>
+
+            <div class="flex gap-4 items-start">
+              <span class="flex-shrink-0 w-6 h-6 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-xs">5</span>
+              <div>
+                <h4 class="font-bold text-sm">sessionStorage is not a secure token store</h4>
+                <p class="text-xs text-gray-500 mt-0.5">Keep JWT session markers in httpOnly cookies to prevent extraction by cross-site scripting scripts.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- CERT-In Acknowledgement Box -->
+        <section class="border border-green-200 bg-green-50/40 p-6 rounded-xl space-y-4">
+          <div class="flex gap-4">
+            <div class="flex-shrink-0 text-brand-success">
+              <!-- Shield Icon -->
+              <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+              </svg>
+            </div>
+            <div class="space-y-2">
+              <h4 class="font-bold text-gray-900 text-base flex items-center gap-2">
+                🏅 CERT-In Acknowledgement
+              </h4>
+              <p class="text-xs text-gray-600 leading-relaxed">
+                This report was registered by CERT-In (Indian Computer Emergency Response Team) under <span class="font-mono bg-white border border-gray-200 px-1 py-0.5 rounded text-gray-800 font-bold">Ref: CERTIn-20460826</span> and forwarded to the concerned authority for remediation. All findings were disclosed responsibly — no candidate data was accessed, stored, or exfiltrated at any point during the assessment.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Footer / Share / Back -->
+        <section class="border-t border-gray-200 pt-8 space-y-6">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            
+            <!-- Share Buttons -->
+            <div class="flex items-center gap-3">
+              <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">Share:</span>
+              <button onclick="sharePost('twitter')" class="bg-slate-900 text-white hover:bg-slate-800 text-xs px-3 py-1.5 rounded flex items-center gap-1.5 font-medium transition-colors">
+                Twitter
+              </button>
+              <button onclick="sharePost('linkedin')" class="bg-blue-700 text-white hover:bg-blue-600 text-xs px-3 py-1.5 rounded flex items-center gap-1.5 font-medium transition-colors">
+                LinkedIn
+              </button>
+              <button onclick="sharePost('whatsapp')" class="bg-green-600 text-white hover:bg-green-500 text-xs px-3 py-1.5 rounded flex items-center gap-1.5 font-medium transition-colors">
+                WhatsApp
+              </button>
+            </div>
+
+            <!-- Author signature -->
+            <div class="text-xs text-gray-400 font-sans md:text-right">
+              All testing was conducted against publicly accessible endpoints only.<br>
+              <a href="https://iamtobi.in" class="underline font-bold text-gray-500 hover:text-gray-900">Darshan Tobi</a> · Security Research 2026
+            </div>
+
+          </div>
+        </section>
+
+      </main>
+
+    </div>
+  </div>
+
+  <!-- Jump to Top Button -->
+  <button id="btn-top" onclick="jumpToTop()" class="fixed bottom-6 right-6 p-3 rounded-full bg-slate-900 text-white hover:bg-slate-800 shadow-lg border border-slate-700 opacity-0 pointer-events-none transition-all duration-300 z-40" title="Jump to Top">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"></path>
+    </svg>
+  </button>
+
+  <!-- Interactive JavaScript -->
+  <script>
+    // Copy code block to clipboard
+    function copyCode(button) {
+      const pre = button.nextElementSibling;
+      const text = pre.innerText;
+      
+      navigator.clipboard.writeText(text).then(() => {
+        const originalText = button.innerText;
+        button.innerText = 'Copied!';
+        button.classList.add('bg-green-600', 'text-white');
+        setTimeout(() => {
+          button.innerText = originalText;
+          button.classList.remove('bg-green-600', 'text-white');
+        }, 1500);
+      });
+    }
+
+    // Share buttons dynamic constructor
+    function sharePost(platform) {
+      const url = window.location.href;
+      const title = document.title;
+      let shareUrl = '';
+      
+      switch(platform) {
+        case 'twitter':
+          shareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`;
+          break;
+        case 'linkedin':
+          shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
+          break;
+        case 'whatsapp':
+          shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(title + ' ' + url)}`;
+          break;
+      }
+      if (shareUrl) {
+        window.open(shareUrl, '_blank', 'noopener,noreferrer');
+      }
+    }
+
+    // Dynamic scroll progress bar & jump-to-top indicator
+    window.addEventListener('scroll', () => {
+      const docHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      const progress = (window.scrollY / docHeight) * 100;
+      document.getElementById('progress-bar').style.width = progress + '%';
+      
+      const btnTop = document.getElementById('btn-top');
+      if (window.scrollY > 500) {
+        btnTop.classList.remove('opacity-0', 'pointer-events-none');
+        btnTop.classList.add('opacity-100');
+      } else {
+        btnTop.classList.remove('opacity-100');
+        btnTop.classList.add('opacity-0', 'pointer-events-none');
+      }
+    });
+
+    function jumpToTop() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Auto-generate Table of Contents and Highlight sections on scroll
+    document.addEventListener('DOMContentLoaded', () => {
+      const headings = document.querySelectorAll('main h2');
+      const toc = document.getElementById('toc');
+      
+      headings.forEach((heading) => {
+        // Find or generate ID for heading anchors
+        if (!heading.id) {
+          heading.id = heading.innerText.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        }
+        
+        // Append anchor link icon if missing
+        if (!heading.querySelector('.anchor-link')) {
+          const anchor = document.createElement('a');
+          anchor.href = `#${heading.id}`;
+          anchor.className = 'anchor-link text-gray-300 hover:text-gray-500 ml-1 font-normal text-lg';
+          anchor.innerText = '#';
+          heading.appendChild(anchor);
+        }
+
+        // Create TOC Link
+        const li = document.createElement('a');
+        li.href = `#${heading.id}`;
+        li.className = 'block py-1.5 pl-3 border-l-2 border-transparent text-gray-400 hover:text-gray-900 hover:border-gray-300 transition-all text-xs tracking-wide uppercase font-medium';
+        li.innerText = heading.innerText.replace(/[^a-zA-Z0-9\s—]/g, '').trim();
+        li.setAttribute('data-target-id', heading.id);
+        toc.appendChild(li);
+      });
+
+      // Scroll Spy highlight observer
+      const spyLinks = document.querySelectorAll('#toc a');
+      const observerOptions = {
+        root: null,
+        rootMargin: '0px 0px -60% 0px',
+        threshold: 0
+      };
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            spyLinks.forEach((link) => {
+              if (link.getAttribute('data-target-id') === entry.target.id) {
+                link.classList.add('toc-active');
+              } else {
+                link.classList.remove('toc-active');
+              }
+            });
+          }
+        });
+      }, observerOptions);
+
+      headings.forEach((heading) => observer.observe(heading));
+    });
+  </script>
+</body>
+</html>

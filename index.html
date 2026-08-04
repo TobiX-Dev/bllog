@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- SEO Meta Tags -->
+    <title>Tobi | Cybersecurity Researcher &amp; Writeups</title>
+    <meta name="description" content="Independent security research, CTF writeups, vulnerability disclosures, and responsible disclosure reports by Tobi." />
+    <meta name="author" content="Tobi" />
+    
+    <!-- Open Graph (Social Sharing) -->
+    <meta property="og:title" content="Tobi | Cybersecurity Writeups" />
+    <meta property="og:description" content="Detailed logs of security research and vulnerability findings by Tobi." />
+    <meta property="og:type" content="website" />
+  </head>
+  <body>
+    <!-- Apply theme before React loads — prevents white flash -->
+    <script>
+      (function() {
+        var t = localStorage.getItem('tobi_theme');
+        if (t === 'light') {
+          document.documentElement.classList.remove('dark');
+        } else {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
