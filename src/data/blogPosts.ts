@@ -14,7 +14,7 @@ export const blogPosts: BlogPost[] = [
   {
     slug: 'mpsc-oas-vulnerabilities',
     title: 'MPSC Online Assessment System — Multiple Critical & High-Severity Vulnerabilities',
-    date: 'July 28, 2026',
+    date: 'July 17, 2026',
     readTime: '14 min read',
     tags: ['Critical Severity', 'Responsible Disclosure', 'CERT-In Acknowledged', 'Fixed & Patched'],
     component: 'MPSCPost',
@@ -25,7 +25,7 @@ export const blogPosts: BlogPost[] = [
   {
     slug: 'upsc-nra-vulnerabilities',
     title: 'UPSC NRA Candidate Portal — Multiple Critical & High-Severity Vulnerabilities',
-    date: 'June 14, 2026',
+    date: 'June 17, 2026',
     readTime: '12 min read',
     tags: ['Critical Severity', 'Responsible Disclosure', 'CERT-In Acknowledged', 'Fixed & Patched'],
     component: 'UPSCPost',
