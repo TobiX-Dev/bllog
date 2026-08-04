@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Project-specific — don't commit these
+bllog.zip
+*.zip
+netli/
+mpsc leaked/
+upsc-nra-blog-post.html
+
