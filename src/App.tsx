@@ -4,6 +4,7 @@ import { Navbar } from './components/Navbar';
 import { Terminal } from './components/Terminal';
 import { Footer } from './components/Footer';
 import ScrollToTop from './components/ScrollToTop';
+import MobileBanner from './components/MobileBanner';
 import UPSCPost from './components/blog/UPSCPost';
 import MPSCPost from './components/blog/MPSCPost';
 import Analytics from './components/Analytics';
@@ -207,6 +208,8 @@ function HomePage({
 
       <Footer />
 
+      <MobileBanner />
+
       <Terminal
         isOpen={isTerminalOpen}
         onClose={() => setIsTerminalOpen(false)}
@@ -259,11 +262,11 @@ function BlogPostPage({
   );
 
   if (post.component === 'UPSCPost') {
-    return <><UPSCPost />{terminalOverlay}</>;
+    return <><UPSCPost /><MobileBanner />{terminalOverlay}</>;
   }
 
   if (post.component === 'MPSCPost') {
-    return <><MPSCPost />{terminalOverlay}</>;
+    return <><MPSCPost /><MobileBanner />{terminalOverlay}</>;
   }
 
   return <div style={{ color: '#e2e8f0', padding: 40 }}>Post component not found.</div>;

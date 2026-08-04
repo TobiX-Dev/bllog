@@ -388,7 +388,7 @@ const MPSCPost: React.FC = () => {
   const sans = "'Space Grotesk','Inter',sans-serif";
 
   return (
-    <div style={styles.page}>
+    <div style={styles.page} className="blog-post-page">
       {/* Reading progress bar */}
       <div style={styles.progressBar(readPct)} />
 
@@ -409,7 +409,7 @@ const MPSCPost: React.FC = () => {
       </nav>
 
       {/* Main layout */}
-      <div style={{ ...styles.layout, gridTemplateColumns: 'minmax(0,1fr) 260px' }}>
+      <div className="blog-post-layout" style={{ ...styles.layout, gridTemplateColumns: 'minmax(0,1fr) 260px' }}>
         {/* ── Left: Article ── */}
         <article>
 
@@ -417,10 +417,10 @@ const MPSCPost: React.FC = () => {
           <div style={styles.sectionHead}>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
               {['🔴 Critical Severity', '🛡 Responsible Disclosure', '✅ CERT-In Acknowledged', '🔒 Fixed & Patched'].map(b => (
-                <span key={b} style={{ background: '#1a1a24', border: '1px solid #2a2a3a', borderRadius: 99, padding: '4px 12px', fontSize: 12, color: '#94a3b8', fontFamily: mono }}>{b}</span>
+                <span key={b} style={{ background: '#1a1a24', border: '1px solid #2a2a3a', borderRadius: 99, padding: '4px 12px', fontSize: 12, color: '#94a3b8', fontFamily: mono, whiteSpace: 'nowrap' }}>{b}</span>
               ))}
             </div>
-            <h1 style={{ fontSize: 28, fontWeight: 800, color: '#f1f5f9', fontFamily: sans, lineHeight: 1.3, marginBottom: 14 }}>
+            <h1 className="blog-post-h1" style={{ fontSize: 28, fontWeight: 800, color: '#f1f5f9', fontFamily: sans, lineHeight: 1.3, marginBottom: 14 }}>
               MPSC Online Assessment System — Multiple Critical & High-Severity Vulnerabilities
             </h1>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, fontSize: 13, color: '#64748b', fontFamily: mono }}>
