@@ -113,12 +113,12 @@ const criticalFindings: Finding[] = [
   {
     id: 'V-01', cvss: '9.8', severity: 'CRITICAL',
     title: 'Hardcoded AES-128 Encryption Key & IV in Client-Side JavaScript',
-    description: 'Every API request body and response is encrypted using AES-128-CBC. The encryption key and IV are identical ("1234567812345678") and hardcoded in the public JavaScript bundle visible to any browser visitor visiting mpsconline.gov.in.',
+    description: 'Every API request body and response is encrypted using AES-128-CBC. The encryption key and IV are identical ("12345678*********") and hardcoded in the public JavaScript bundle visible to any browser visitor visiting mpsconline.gov.in.',
     code: `// Extracted from main.a0334bf6.chunk.js (Chrome DevTools → Sources)
 // Line ~3,698,589
 
-i = "7lB9sd8yddCcBpe38895Zbpv8/q93yA26YaX33uXXZI91FRU2dxJA3PDn3uCxpFOJc/5H3FzTpnr19sC8Ip8tg=="
-o = "1234567812345678"
+i = "7lB9sd8yddCcBpe38895Zbpv8*****************************************5H3FzTpnr19sC8Ip8tg=="
+o = "12345678*********"
 
 // o = AES-128-CBC Key AND IV (same value)
 // i = CRC-32 secret token for request integrity checks`,
@@ -131,7 +131,7 @@ o = "1234567812345678"
     description: 'The application uses CRC-32 checksums in the Authorization header to verify requests originated from the legitimate frontend. The secret token used to generate these checksums is hardcoded in the same public JS bundle.',
     code: `import binascii
 
-AT = "7lB9sd8yddCcBpe38895Zbpv8/q93yA26YaX33uXXZI91FRU2dxJA3PDn3uCxpFOJc/5H3FzTpnr19sC8Ip8tg=="
+AT = "7lB9sd8yddCcBpe38895Zbpv8*****************************************5H3FzTpnr19sC8Ip8tg=="
 
 # GET requests:
 get_crc = format(binascii.crc32(AT.encode()) & 0xFFFFFFFF, 'x')
@@ -249,9 +249,9 @@ import base64, binascii, json, requests
 import urllib3; urllib3.disable_warnings()
 
 # ── Hardcoded secrets extracted from main.a0334bf6.chunk.js ──────────────────
-KEY = b"1234567812345678"   # AES-128-CBC Key (variable o in bundle)
-IV  = b"1234567812345678"   # IV (same as key)
-AT  = "7lB9sd8yddCcBpe38895Zbpv8/q93yA26YaX33uXXZI91FRU2dxJA3PDn3uCxpFOJc/5H3FzTpnr19sC8Ip8tg=="
+KEY = b"12345678*********"   # AES-128-CBC Key (variable o in bundle)
+IV  = b"12345678*********"   # IV (same as key)
+AT  = "7lB9sd8yddCcBpe38895Zbpv8*****************************************5H3FzTpnr19sC8Ip8tg=="
 
 def decrypt(b64_ciphertext):
     cipher = AES.new(KEY, AES.MODE_CBC, IV)
@@ -511,8 +511,8 @@ const MPSCPost: React.FC = () => {
               The critical discovery happened when I noticed two variable assignments deep in <code style={{ fontFamily: mono, color: '#94a3b8' }}>main.a0334bf6.chunk.js</code>:
             </p>
             <TerminalFrame title="Chrome DevTools → Sources → main.a0334bf6.chunk.js (Line ~3,698,589)">
-              <CodeBlock lang="javascript" code={`i = "7lB9sd8yddCcBpe38895Zbpv8/q93yA26YaX33uXXZI91FRU2dxJA3PDn3uCxpFOJc/5H3FzTpnr19sC8Ip8tg=="
-o = "1234567812345678"
+              <CodeBlock lang="javascript" code={`i = "7lB9sd8yddCcBpe38895Zbpv8*****************************************5H3FzTpnr19sC8Ip8tg=="
+o = "12345678*********"
 
 // o → AES-128-CBC key (and IV)
 // i → CRC-32 secret token used in every Authorization header`} />
