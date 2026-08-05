@@ -5,6 +5,7 @@ import { Terminal } from './components/Terminal';
 import { Footer } from './components/Footer';
 import ScrollToTop from './components/ScrollToTop';
 import MobileBanner from './components/MobileBanner';
+import { usePageTracking } from './hooks/usePageTracking';
 import UPSCPost from './components/blog/UPSCPost';
 import MPSCPost from './components/blog/MPSCPost';
 import Analytics from './components/Analytics';
@@ -273,7 +274,8 @@ function BlogPostPage({
 }
 
 /* ── Root app ──────────────────────────────────────────────────────────── */
-function App() {
+function AppInner() {
+  usePageTracking(); // fires on every page load/route change
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem('tobi_theme');
     if (saved !== null) return saved === 'dark';
@@ -323,4 +325,4 @@ function App() {
   );
 }
 
-export default App;
+export default AppInner;
